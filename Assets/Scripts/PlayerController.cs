@@ -1,17 +1,30 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using System;
 
 public class PlayerController : MonoBehaviour
 {
-    private const int PITCH_LIMIT = 75; //75 grados
+    // Parámetros para el editor
+    
     public int velocity = 3;
+    public float jumpForce = 5;
 
+    // Variables
+    private uint mouseSensivity = 1;
     private Vector3 mousePos;
-    Camera cameraComp;
-
     bool jumping;
+    Camera cameraComp;
+    Rigidbody rigidComp;
+
+    // Referencias
+    public Slider sensivitySlider;
+
+
+    // Constantes
+    private const int PITCH_LIMIT = 75; //75 grados
+
 
     // Start is called before the first frame update
     void Start()
@@ -19,40 +32,74 @@ public class PlayerController : MonoBehaviour
         jumping = false;
         mousePos = Input.mousePosition;
         cameraComp = GetComponentInChildren<Camera>();
-        if (cameraComp != null)
-            Debug.Log("Camara OK");
+        rigidComp = GetComponent<Rigidbody>();
+        if (cameraComp == null)
+            Debug.LogWarning("ERROR: no hay cámara");
+        if (rigidComp == null)
+            Debug.LogWarning("ERROR: no hay Rigidbody");
     }
 
     // Update is called once per frame
     void Update()
     {
-        // ROTACIONES
-        if (mousePos != Input.mousePosition)
+        if (!GameManager.Instance().IsGamePaused()) 
         {
-            UpdateCamera(Input.mousePosition - mousePos);
-            mousePos = Input.mousePosition;
+            // ROTACIONES DE CÁMARA
+            Vector2 mouseIncr = Input.mousePosition - mousePos;
+            if (mouseIncr.magnitude > 0.5f)//mousePos != Input.mousePosition) //mousePos - Input.mousePosition).magnitude > 0.5
+            {
+                UpdateCamera(mouseIncr);
+                mousePos = Input.mousePosition;
+            }
+
+            // MOVIMIENTO
+            if (Input.GetKey(KeyCode.W))
+                transform.position += (transform.forward * velocity * Time.deltaTime);
+            if (Input.GetKey(KeyCode.S))
+                transform.position -= (transform.forward * velocity * Time.deltaTime);
+            if (Input.GetKey(KeyCode.A))
+                transform.position -= (transform.right * velocity * Time.deltaTime);
+            if (Input.GetKey(KeyCode.D))
+                transform.position += (transform.right * velocity * Time.deltaTime);
+
+            // SALTO
+            if (Input.GetKeyDown(KeyCode.Space) && !jumping)
+            {
+                rigidComp.AddForce(new Vector3(0, jumpForce * 5000, 0));
+                jumping = true;
+            }
+
+
+            // DISPARO
+            if (Input.GetMouseButtonDown(0))
+                Debug.Log("Fire");
         }
 
-        // TRASLACIONES
-        if (Input.GetMouseButtonDown(0))
-            Debug.Log("Fire");
-        if (Input.GetKey(KeyCode.W))
-            transform.position += (transform.forward * velocity * Time.deltaTime);
-        if (Input.GetKey(KeyCode.S))
-            transform.position -= (transform.forward * velocity * Time.deltaTime);
-        if (Input.GetKey(KeyCode.A))
-            transform.Translate(Vector3.left * velocity * Time.deltaTime);
-        if (Input.GetKey(KeyCode.D))
-            transform.Translate(Vector3.right * velocity * Time.deltaTime);
+
+        // MENU
+        if (Input.GetKeyDown(KeyCode.Escape))
+            GameManager.Instance().PauseGame();
+            
+    }
+
+    // Colisión con el suelo
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Suelo")) 
+        {
+            jumping = false;
+            Debug.Log("Toco suelo");
+        }
     }
 
     private void UpdateCamera(Vector2 mouseIncr)
     {
+        mouseIncr /= 7;
         // Pitch
-        Pitch(-mouseIncr.y);
+        Pitch(-mouseIncr.y * mouseSensivity);
 
         // Yaw
-        Yaw(mouseIncr.x);
+        Yaw(mouseIncr.x * mouseSensivity);
     }
 
     // Rota en el eje X (solo la cámara)
@@ -60,8 +107,6 @@ public class PlayerController : MonoBehaviour
     {
         //Rotación actual en formato [-90, 90]
         float rotX = WrapAngle(cameraComp.transform.localRotation.eulerAngles.x);
-        //Debug.Log("Actual rot. " + rotX + ", incr: " + degrees);
-
 
         //Capamos la rotación
         if (rotX + degrees > PITCH_LIMIT)
@@ -94,5 +139,10 @@ public class PlayerController : MonoBehaviour
             return angle - 360;
 
         return angle;
+    }
+
+    public void ChangeSensivity() 
+    {
+        mouseSensivity = (uint)sensivitySlider.value;
     }
 }
