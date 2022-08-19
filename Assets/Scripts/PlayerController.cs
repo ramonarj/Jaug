@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,9 +17,13 @@ public class PlayerController : MonoBehaviour
     bool jumping;
     Camera cameraComp;
     Rigidbody rigidComp;
+    private int weaponSelected = 1; //Empiezan en 1
+    private Arma arma;
 
     // Referencias
     public Slider sensivitySlider;
+    public GameObject weaponSelector;
+    public TextMeshProUGUI ammoText;
 
 
     // Constantes
@@ -39,11 +44,16 @@ public class PlayerController : MonoBehaviour
             Debug.LogWarning("ERROR: no hay cámara");
         if (rigidComp == null)
             Debug.LogWarning("ERROR: no hay Rigidbody");
+
+        arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Arma>();
+        if (arma == null)
+            Debug.Log("pq??");
     }
 
     // Update is called once per frame
     void Update()
     {
+        // De momento hemos metido aquí todo el input
         if (!GameManager.Instance().IsGamePaused()) 
         {
             // MOVIMIENTO
@@ -64,9 +74,45 @@ public class PlayerController : MonoBehaviour
             }
 
 
-            // DISPARO
-            if (Input.GetMouseButtonDown(0))
-                Debug.Log("Fire");
+            // DISPARO (de momento semi automático)
+            if (Input.GetMouseButtonDown(0)) 
+            {
+                arma.Shoot();
+                UpdateWeaponGUI();
+
+            }
+
+            // RECARGA
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                arma.Reload();
+                UpdateWeaponGUI();
+            }
+
+
+            // CAMBIO DE ARMA
+            float mouseScroll = Input.GetAxis("Mouse ScrollWheel");
+            if (mouseScroll != 0) 
+            {
+                //TODO: capar a izquierda y derecha la selección
+                // Número de armas
+                //int weaponsNo = weaponSelector.transform.parent.childCount;
+
+                cameraComp.transform.GetChild(weaponSelected - 1).gameObject.SetActive(false);
+
+                // Cambiamos de arma
+                mouseScroll *= 10; //Para pasar de -0.1/0.1 a -1/1
+                weaponSelected += (int)mouseScroll;
+                arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Arma>();
+
+
+                // Actualizamos GUI
+                weaponSelector.transform.position = weaponSelector.transform.parent.GetChild(weaponSelected).position;
+                arma.gameObject.SetActive(true);
+
+
+                UpdateWeaponGUI();
+            }
         }
 
 
@@ -80,17 +126,10 @@ public class PlayerController : MonoBehaviour
     private void LateUpdate()
     {
         if (!GameManager.Instance().IsGamePaused())
-        {
-
-            Debug.Log("Ratón: {" + Input.GetAxisRaw("Mouse X") + ", " + Input.GetAxisRaw("Mouse Y") + "}");
-            
+        {   
             // ROTACIONES DE CÁMARA
             Vector2 mouseIncr = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
 
-            //if (mouseIncr.magnitude > 0.5f)//mousePos != Input.mousePosition) //mousePos - Input.mousePosition).magnitude > 0.5
-            //{
-            //    UpdateCamera(mouseIncr);
-            //}
             UpdateCamera(mouseIncr);
         }
     }
@@ -101,13 +140,11 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.layer == LayerMask.NameToLayer("Suelo")) 
         {
             jumping = false;
-            Debug.Log("Toco suelo");
         }
     }
 
     private void UpdateCamera(Vector2 mouseIncr)
     {
-        //mouseIncr /= 7;
         // Pitch
         Pitch(-mouseIncr.y * mouseSensivity);
 
@@ -157,5 +194,11 @@ public class PlayerController : MonoBehaviour
     public void ChangeSensivity() 
     {
         mouseSensivity = (uint)sensivitySlider.value;
+    }
+
+    // Actualiza la munición del arma actual
+    private void UpdateWeaponGUI() 
+    {
+        ammoText.GetComponent<TextMeshProUGUI>().text = arma.ammo + " / " + arma.maxAmmo;
     }
 }
