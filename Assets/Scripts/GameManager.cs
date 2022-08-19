@@ -66,5 +66,6 @@ public class GameManager : MonoBehaviour
     {
         pauseMenu.SetActive(!pauseMenu.activeSelf);
         isGamePaused = pauseMenu.activeSelf;
+        Cursor.visible = isGamePaused;
     }
 }

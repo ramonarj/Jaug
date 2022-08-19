@@ -13,7 +13,6 @@ public class PlayerController : MonoBehaviour
 
     // Variables
     private uint mouseSensivity = 1;
-    private Vector3 mousePos;
     bool jumping;
     Camera cameraComp;
     Rigidbody rigidComp;
@@ -29,8 +28,11 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Ratón en medio de la pantalla
+        //Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         jumping = false;
-        mousePos = Input.mousePosition;
         cameraComp = GetComponentInChildren<Camera>();
         rigidComp = GetComponent<Rigidbody>();
         if (cameraComp == null)
@@ -44,14 +46,6 @@ public class PlayerController : MonoBehaviour
     {
         if (!GameManager.Instance().IsGamePaused()) 
         {
-            // ROTACIONES DE CÁMARA
-            Vector2 mouseIncr = Input.mousePosition - mousePos;
-            if (mouseIncr.magnitude > 0.5f)//mousePos != Input.mousePosition) //mousePos - Input.mousePosition).magnitude > 0.5
-            {
-                UpdateCamera(mouseIncr);
-                mousePos = Input.mousePosition;
-            }
-
             // MOVIMIENTO
             if (Input.GetKey(KeyCode.W))
                 transform.position += (transform.forward * velocity * Time.deltaTime);
@@ -82,6 +76,25 @@ public class PlayerController : MonoBehaviour
             
     }
 
+    // Las cosas de la cámara es recomendable ponerlas en el LateUpdate
+    private void LateUpdate()
+    {
+        if (!GameManager.Instance().IsGamePaused())
+        {
+
+            Debug.Log("Ratón: {" + Input.GetAxisRaw("Mouse X") + ", " + Input.GetAxisRaw("Mouse Y") + "}");
+            
+            // ROTACIONES DE CÁMARA
+            Vector2 mouseIncr = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
+
+            //if (mouseIncr.magnitude > 0.5f)//mousePos != Input.mousePosition) //mousePos - Input.mousePosition).magnitude > 0.5
+            //{
+            //    UpdateCamera(mouseIncr);
+            //}
+            UpdateCamera(mouseIncr);
+        }
+    }
+
     // Colisión con el suelo
     private void OnCollisionEnter(Collision collision)
     {
@@ -94,7 +107,7 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateCamera(Vector2 mouseIncr)
     {
-        mouseIncr /= 7;
+        //mouseIncr /= 7;
         // Pitch
         Pitch(-mouseIncr.y * mouseSensivity);
 
@@ -105,10 +118,10 @@ public class PlayerController : MonoBehaviour
     // Rota en el eje X (solo la cámara)
     private void Pitch(float degrees) 
     {
-        //Rotación actual en formato [-90, 90]
+        // Rotación actual en formato [-90, 90]
         float rotX = WrapAngle(cameraComp.transform.localRotation.eulerAngles.x);
 
-        //Capamos la rotación
+        // Capamos la rotación
         if (rotX + degrees > PITCH_LIMIT)
             degrees = PITCH_LIMIT - rotX;
         else if (rotX + degrees < -PITCH_LIMIT)
