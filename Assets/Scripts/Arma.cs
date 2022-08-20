@@ -57,38 +57,63 @@ public class Arma : MonoBehaviour
                 reloading = false;
                 ammo = maxAmmo;
                 reloadTimer = 0;
+
             }
         }
 
         //
-        if(shooting)
+        //if(shooting)
     }
 
     // Dispara
     public void Shoot() 
     {
-        if(gunType == GunType.SemiAutomatic && ammo > 0)
+        // No queda munición
+        if (ammo <= 0) 
         {
-            // Disparamos 
-            ammo--;
-            if(particulas != null) 
-            {
-                particulas.Play();
-            }
-
-            // Y ahora a ver si le damos a algo
-            Transform cameraTrans = gameObject.transform.parent;
-
-            // Le damos a algo
-            RaycastHit hit;
-            if (Physics.Raycast(cameraTrans.position, cameraTrans.forward, out hit, range))
-            {
-                Debug.Log("Tocado");
-            }
-        }
-        else
             Debug.Log("Out of ammo");
+            return;
+        }
+            
+        // Disparo semiautomático (1 vez y ya está)
+        if (gunType == GunType.SemiAutomatic)
+            ShootPrivate();
 
+        // Disparo automático (empieza una corutina)
+        else if (gunType == GunType.Automatic && !shooting) 
+        {
+            shooting = true;
+            StartCoroutine(ShootAuto());
+        }
+    }
+
+   
+    IEnumerator ShootAuto()
+    {
+       while(shooting && ammo > 0) 
+       {
+            ShootPrivate();
+            yield return new WaitForSeconds(1f / cadencia);
+       }
+    }
+
+    // Método privado que ya hace la funcionalidad de disparar
+    private void ShootPrivate() 
+    {
+        // Disparamos y activamos partículas
+        ammo--;
+        if (particulas != null)
+        {
+            particulas.Play();
+        }
+
+        // Y ahora a ver si le damos a algo o qué plan
+        Transform cameraTrans = gameObject.transform.parent;
+        RaycastHit hit;
+        if (Physics.Raycast(cameraTrans.position, cameraTrans.forward, out hit, range))
+        {
+            Debug.Log("Tocado");
+        }
     }
 
     // Recarga
@@ -97,5 +122,11 @@ public class Arma : MonoBehaviour
         reloading = true;
 
         //Reloading animation.play()
+    }
+
+    // Deja de disparar en automático
+    public void StopShooting() 
+    {
+        shooting = false;
     }
 }

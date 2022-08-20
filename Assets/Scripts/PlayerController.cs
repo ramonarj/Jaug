@@ -75,17 +75,21 @@ public class PlayerController : MonoBehaviour
 
             // DISPARO
             // Semiautomático
-            if (Input.GetMouseButtonDown(0)) 
+            if (Input.GetMouseButtonDown(0))
             {
                 arma.Shoot();
                 UpdateWeaponGUI();
             }
             // Automático
-            else if (Input.GetMouseButton(0) && arma.gunType == Arma.GunType.Automatic) 
+            else if (Input.GetMouseButton(0) && arma.gunType == Arma.GunType.Automatic)
             {
                 arma.Shoot();
                 UpdateWeaponGUI();
             }
+            // Levantamos click izquierdo
+            else if (Input.GetMouseButtonUp(0))
+                arma.StopShooting();
+            
 
             // RECARGA
             if (Input.GetKeyDown(KeyCode.R))
