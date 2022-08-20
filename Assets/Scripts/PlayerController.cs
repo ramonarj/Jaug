@@ -89,7 +89,13 @@ public class PlayerController : MonoBehaviour
             // Levantamos click izquierdo
             else if (Input.GetMouseButtonUp(0))
                 arma.StopShooting();
-            
+
+
+            // APUNTADO
+            if (Input.GetMouseButtonDown(1))
+                arma.Aim();
+            else if (Input.GetMouseButtonUp(1))
+                arma.StopAiming();
 
             // RECARGA
             if (Input.GetKeyDown(KeyCode.R))
