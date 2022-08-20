@@ -46,8 +46,7 @@ public class PlayerController : MonoBehaviour
             Debug.LogWarning("ERROR: no hay Rigidbody");
 
         arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Arma>();
-        if (arma == null)
-            Debug.Log("pq??");
+        UpdateWeaponGUI();
     }
 
     // Update is called once per frame
@@ -74,12 +73,18 @@ public class PlayerController : MonoBehaviour
             }
 
 
-            // DISPARO (de momento semi automático)
+            // DISPARO
+            // Semiautomático
             if (Input.GetMouseButtonDown(0)) 
             {
                 arma.Shoot();
                 UpdateWeaponGUI();
-
+            }
+            // Automático
+            else if (Input.GetMouseButton(0) && arma.gunType == Arma.GunType.Automatic) 
+            {
+                arma.Shoot();
+                UpdateWeaponGUI();
             }
 
             // RECARGA
