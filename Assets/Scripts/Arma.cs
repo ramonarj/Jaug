@@ -16,6 +16,8 @@ public class Arma : MonoBehaviour
     public float tiempoRecarga = 1f;
     public float aimDistance;
     public GunType gunType;
+    public Transform defaultTrans;
+    public Transform aimTrans;
 
     // Privadas
     private bool reloading; // Control para las subrutinas
@@ -25,7 +27,6 @@ public class Arma : MonoBehaviour
 
     private float range = 100f;
     private float defaultFOV;
-    private Vector3 initialPos;
 
     // Referencias
     private Camera camara;
@@ -33,7 +34,6 @@ public class Arma : MonoBehaviour
 
     // Timers
     private float reloadTimer;
-    private float shootTimer;
 
     // Constantes
     const float AIM_TIME = 0.5f;
@@ -45,6 +45,7 @@ public class Arma : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         reloadTimer = 0;
         reloading = false;
         aiming = false;
@@ -53,7 +54,6 @@ public class Arma : MonoBehaviour
         particulas = GetComponentInChildren<ParticleSystem>();
         camara = gameObject.transform.parent.GetComponent<Camera>();
         defaultFOV = camara.fieldOfView;
-        initialPos = transform.position;
     }
 
     // Update is called once per frame
@@ -103,6 +103,7 @@ public class Arma : MonoBehaviour
     // Apunta
     public void Aim() 
     {
+        Debug.Log("Aiming");
         aiming = true;
         StartCoroutine(AimCoroutine());
     }
@@ -146,8 +147,13 @@ public class Arma : MonoBehaviour
     IEnumerator AimCoroutine()
     {
         // Donde empieza y termina el apuntado
+        // NOTA: estas variables son necesarias porque el jugador puede empezar a apuntar y soltar
+        // el click derecho antes de apuntar del todo; por tanto, la fase inicial del apuntado es 
+        // variable y no siempre será la posición que tiene el arma por defecto (puede estar a camino)
         float startingFOV = camara.fieldOfView;
         float endingFOV = defaultFOV - aimDistance;
+        Vector3 startingPos = transform.localPosition;
+        Quaternion startingRot = transform.localRotation;
 
         // Tiempo que tardará en completar el apuntado
         float aimTime = ((startingFOV - endingFOV) * AIM_TIME / aimDistance); //regla de 3
@@ -155,10 +161,16 @@ public class Arma : MonoBehaviour
 
         while (camara.fieldOfView > endingFOV && aiming)
         {
-            camara.fieldOfView = Mathf.Lerp(startingFOV, endingFOV, counter / aimTime);
+            float progress = counter / aimTime;
+            camara.fieldOfView = Mathf.Lerp(startingFOV, endingFOV, progress);
+            transform.localPosition = Vector3.Lerp(startingPos, aimTrans.localPosition, progress);
+            transform.localRotation = Quaternion.Lerp(startingRot, aimTrans.localRotation, progress);
             counter += Time.deltaTime;
             yield return null;
         }
+
+        Debug.Log("Ya");
+        
     }
 
     IEnumerator StopAimCoroutine()
@@ -166,6 +178,8 @@ public class Arma : MonoBehaviour
         // Donde empieza y termina el apuntado
         float startingFOV = camara.fieldOfView;
         float endingFOV = defaultFOV;
+        Vector3 startingPos = transform.localPosition;
+        Quaternion startingRot = transform.localRotation;
 
         // Tiempo que tardará en completar el 'desapuntado'
         float aimTime = ((endingFOV - startingFOV) * AIM_TIME / aimDistance); //regla de 3
@@ -174,6 +188,8 @@ public class Arma : MonoBehaviour
         while (camara.fieldOfView < endingFOV && !aiming)
         {
             camara.fieldOfView = Mathf.Lerp(startingFOV, endingFOV, counter / aimTime);
+            transform.localPosition = Vector3.Lerp(startingPos, defaultTrans.localPosition, counter / aimTime);
+            transform.localRotation = Quaternion.Lerp(startingRot, defaultTrans.localRotation, counter / aimTime);
             counter += Time.deltaTime;
             yield return null;
         }
