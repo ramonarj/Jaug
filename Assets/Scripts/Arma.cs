@@ -4,26 +4,28 @@ using UnityEngine;
 
 public class Arma : MonoBehaviour
 {
-
+    #region Atributos
     //TODO: quizás hacer 2 clases distintas en vez de un enum, que hereden
     public enum GunType { Automatic, SemiAutomatic};
 
 
     // Para el editor
     public float damage = 10;
-
     public int maxAmmo = 30;
-
     public int cadencia = 5; //balas/segundo
     public float tiempoRecarga = 1f;
+    public float aimDistance;
     public GunType gunType;
 
     // Privadas
-    private bool reloading;
+    private bool reloading; // Control para las subrutinas
     private bool shooting;
+    private bool aiming;
     public int ammo { get; set; }
 
     private float range = 100f;
+    private float defaultFOV;
+    private Vector3 initialPos;
 
     // Referencias
     private Camera camara;
@@ -33,6 +35,11 @@ public class Arma : MonoBehaviour
     private float reloadTimer;
     private float shootTimer;
 
+    // Constantes
+    const float AIM_TIME = 0.5f;
+    #endregion
+
+
 
 
     // Start is called before the first frame update
@@ -40,31 +47,19 @@ public class Arma : MonoBehaviour
     {
         reloadTimer = 0;
         reloading = false;
+        aiming = false;
+        shooting = false;
         ammo = maxAmmo;
         particulas = GetComponentInChildren<ParticleSystem>();
         camara = gameObject.transform.parent.GetComponent<Camera>();
+        defaultFOV = camara.fieldOfView;
+        initialPos = transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        // Esto está vacío porque tanto la recarga como el disparo
-        // automático lo hemos hecho con corutinas
-        // Recargando el arma
-        //if (reloading) 
-        //{
-        //    reloadTimer += Time.deltaTime;
-        //    if(reloadTimer >= tiempoRecarga) 
-        //    {
-        //        reloading = false;
-        //        ammo = maxAmmo;
-        //        reloadTimer = 0;
 
-        //    }
-        //}
-
-        //
-        //if(shooting)
     }
 
     #region Métodos públicos
@@ -108,16 +103,18 @@ public class Arma : MonoBehaviour
     // Apunta
     public void Aim() 
     {
-        camara.fieldOfView = 40;
+        aiming = true;
+        StartCoroutine(AimCoroutine());
     }
 
     // Deja de apuntar
     public void StopAiming()
     {
-        camara.fieldOfView = 60;
+        aiming = false;
+        StartCoroutine(StopAimCoroutine());
     }
 
-
+    
     #endregion
 
     #region Métodos privados
@@ -143,6 +140,43 @@ public class Arma : MonoBehaviour
         reloading = false;
         ammo = maxAmmo;
         reloadTimer = 0;
+    }
+
+    // Estas dos corutinas son tela de parecidas, habría que mezclarlas
+    IEnumerator AimCoroutine()
+    {
+        // Donde empieza y termina el apuntado
+        float startingFOV = camara.fieldOfView;
+        float endingFOV = defaultFOV - aimDistance;
+
+        // Tiempo que tardará en completar el apuntado
+        float aimTime = ((startingFOV - endingFOV) * AIM_TIME / aimDistance); //regla de 3
+        float counter = 0;
+
+        while (camara.fieldOfView > endingFOV && aiming)
+        {
+            camara.fieldOfView = Mathf.Lerp(startingFOV, endingFOV, counter / aimTime);
+            counter += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    IEnumerator StopAimCoroutine()
+    {
+        // Donde empieza y termina el apuntado
+        float startingFOV = camara.fieldOfView;
+        float endingFOV = defaultFOV;
+
+        // Tiempo que tardará en completar el 'desapuntado'
+        float aimTime = ((endingFOV - startingFOV) * AIM_TIME / aimDistance); //regla de 3
+        float counter = 0;
+
+        while (camara.fieldOfView < endingFOV && !aiming)
+        {
+            camara.fieldOfView = Mathf.Lerp(startingFOV, endingFOV, counter / aimTime);
+            counter += Time.deltaTime;
+            yield return null;
+        }
     }
 
     // Método privado que ya hace la funcionalidad de disparar

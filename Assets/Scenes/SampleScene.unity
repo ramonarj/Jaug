@@ -820,6 +820,7 @@ MonoBehaviour:
   maxAmmo: 0
   cadencia: 2
   tiempoRecarga: 1
+  aimDistance: 0
   gunType: 0
 --- !u!1 &546718836
 GameObject:
@@ -1035,6 +1036,7 @@ MonoBehaviour:
   maxAmmo: 5
   cadencia: 2
   tiempoRecarga: 1
+  aimDistance: 0
   gunType: 0
 --- !u!1 &623084073
 GameObject:
@@ -1244,7 +1246,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &706854918
 Transform:
   m_ObjectHideFlags: 0
@@ -1327,6 +1329,7 @@ MonoBehaviour:
   maxAmmo: 20
   cadencia: 1
   tiempoRecarga: 1
+  aimDistance: 10
   gunType: 1
 --- !u!1 &718611570
 GameObject:
@@ -12239,7 +12242,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1453555699
 Transform:
   m_ObjectHideFlags: 0
@@ -12272,6 +12275,7 @@ MonoBehaviour:
   maxAmmo: 12
   cadencia: 1
   tiempoRecarga: 2
+  aimDistance: 50
   gunType: 1
 --- !u!23 &1453555701
 MeshRenderer:
@@ -12374,6 +12378,7 @@ MonoBehaviour:
   maxAmmo: 35
   cadencia: 8
   tiempoRecarga: 1.5
+  aimDistance: 20
   gunType: 0
 --- !u!23 &1455606863
 MeshRenderer:
