@@ -18,6 +18,7 @@ public class Arma : MonoBehaviour
     public GunType gunType;
     public Transform defaultTrans;
     public Transform aimTrans;
+    public GameObject impactParticle;
 
     // Privadas
     private bool reloading; // Control para las subrutinas
@@ -167,10 +168,7 @@ public class Arma : MonoBehaviour
             transform.localRotation = Quaternion.Lerp(startingRot, aimTrans.localRotation, progress);
             counter += Time.deltaTime;
             yield return null;
-        }
-
-        Debug.Log("Ya");
-        
+        }        
     }
 
     IEnumerator StopAimCoroutine()
@@ -210,7 +208,14 @@ public class Arma : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(cameraTrans.position, cameraTrans.forward, out hit, range))
         {
-            Debug.Log("Tocado");
+            //Quitamos vida al otro si es el caso
+            Target tocado = hit.transform.GetComponent<Target>();
+            if (tocado != null)
+                tocado.TakeDamage(damage);
+
+            // 
+            GameObject particulas = Instantiate(impactParticle, hit.point, Quaternion.LookRotation(hit.normal));
+            Destroy(particulas, 2f);
         }
     }
 
