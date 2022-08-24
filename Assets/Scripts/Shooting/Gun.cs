@@ -2,25 +2,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Arma : MonoBehaviour
+public class Gun : MonoBehaviour
 {
     #region Atributos
     //TODO: quizás hacer 2 clases distintas en vez de un enum, que hereden
     public enum GunType { Automatic, SemiAutomatic};
 
 
-    // Para el editor
+    // Parámetros configurables del arma para el Editor
+    [Tooltip("Daño del arma")]
     public float damage = 10;
+    [Tooltip("El número de balas que caben en el cargador")]
     public int maxAmmo = 30;
+    [Tooltip("La cantidad de balas que dispara por segundo")]
     public int cadencia = 5; //balas/segundo
+    [Tooltip("Los segundos que tarda en recargarse")]
     public float tiempoRecarga = 1f;
+    [Tooltip("Los metros de zoom que tiene la mirilla")]
     public float aimDistance;
+    [Tooltip("Tipo de arma (automática, semiautomática, de ráfagas")]
     public GunType gunType;
+    [Tooltip("La posición en resposo del arma")]
     public Transform defaultTrans;
+    [Tooltip("La posición que tendrá el arma al apuntar")]
     public Transform aimTrans;
+    [Tooltip("La partícula que aparecerá al impactar un objetivo con el arma")]
     public GameObject impactParticle;
 
-    // Privadas
+    // Variables rivadas
     private bool reloading; // Control para las subrutinas
     private bool shooting;
     private bool aiming;
@@ -46,7 +55,6 @@ public class Arma : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
         reloadTimer = 0;
         reloading = false;
         aiming = false;
@@ -65,6 +73,7 @@ public class Arma : MonoBehaviour
 
     #region Métodos públicos
 
+    // TODO: "Arma" no debería depender de Camera, sino recibir una dirección en la que disparar
     // Dispara
     public void Shoot() 
     {
@@ -213,7 +222,13 @@ public class Arma : MonoBehaviour
             if (tocado != null)
                 tocado.TakeDamage(damage);
 
-            // 
+            // Le aplicamos una pequeña fuerza
+            // No sé si debería seguir con "-hit.normal" como dirección
+            hit.rigidbody.AddForceAtPosition(cameraTrans.forward * damage * 10, hit.point);
+
+
+            // TODO; tener una partícula para cada superficie (tierra, agua, carne, metal...)
+            // Partícula del contacto
             GameObject particulas = Instantiate(impactParticle, hit.point, Quaternion.LookRotation(hit.normal));
             Destroy(particulas, 2f);
         }

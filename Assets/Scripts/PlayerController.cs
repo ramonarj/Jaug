@@ -17,13 +17,21 @@ public class PlayerController : MonoBehaviour
     bool jumping;
     Camera cameraComp;
     Rigidbody rigidComp;
+    BoxCollider colliderComp;
     private int weaponSelected = 1; //Empiezan en 1
-    private Arma arma;
+    private Gun arma;
+
+
+    private bool crouching = false;
+    private float originalHeight;
+    private float crouchingHeight;
 
     // Referencias
     public Slider sensivitySlider;
     public GameObject weaponSelector;
     public TextMeshProUGUI ammoText;
+
+    private float CROUCH_TIME = 0.2f;
 
 
     // Constantes
@@ -40,13 +48,17 @@ public class PlayerController : MonoBehaviour
         jumping = false;
         cameraComp = GetComponentInChildren<Camera>();
         rigidComp = GetComponent<Rigidbody>();
+        colliderComp = GetComponent<BoxCollider>();
         if (cameraComp == null)
             Debug.LogWarning("ERROR: no hay cámara");
         if (rigidComp == null)
             Debug.LogWarning("ERROR: no hay Rigidbody");
 
-        arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Arma>();
+        arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Gun>();
         UpdateWeaponGUI();
+
+        originalHeight = colliderComp.size.y;
+        crouchingHeight = originalHeight / 2f;
     }
 
     // Update is called once per frame
@@ -73,6 +85,20 @@ public class PlayerController : MonoBehaviour
             }
 
 
+            // AGACHARSE
+            if (Input.GetKeyDown(KeyCode.LeftShift)) 
+            {
+                Debug.Log("Crouch");
+                crouching = true;
+                StartCoroutine(CrouchCoroutine());
+            }
+            else if (Input.GetKeyUp(KeyCode.LeftShift))
+            {
+                crouching = false;
+                StartCoroutine(UnCrouchCoroutine());
+            }
+
+
             // DISPARO
             // Semiautomático
             if (Input.GetMouseButtonDown(0))
@@ -81,7 +107,7 @@ public class PlayerController : MonoBehaviour
                 UpdateWeaponGUI();
             }
             // Automático
-            else if (Input.GetMouseButton(0) && arma.gunType == Arma.GunType.Automatic)
+            else if (Input.GetMouseButton(0) && arma.gunType == Gun.GunType.Automatic)
             {
                 arma.Shoot();
                 UpdateWeaponGUI();
@@ -118,7 +144,7 @@ public class PlayerController : MonoBehaviour
                 // Cambiamos de arma
                 mouseScroll *= 10; //Para pasar de -0.1/0.1 a -1/1
                 weaponSelected += (int)mouseScroll;
-                arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Arma>();
+                arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Gun>();
 
 
                 // Actualizamos GUI
@@ -215,5 +241,39 @@ public class PlayerController : MonoBehaviour
     private void UpdateWeaponGUI() 
     {
         ammoText.GetComponent<TextMeshProUGUI>().text = arma.ammo + " / " + arma.maxAmmo;
+    }
+
+    private IEnumerator CrouchCoroutine()
+    {
+        float counter = 0;
+        while (crouching && colliderComp.size.y > crouchingHeight)
+        {
+            // Calculamso el incremento
+            Vector3 newSize = colliderComp.size;
+            newSize.y = Mathf.Lerp(originalHeight, crouchingHeight, counter / CROUCH_TIME);
+
+            // Actualizamos el collider
+            colliderComp.size = newSize;
+            counter += Time.deltaTime;
+            yield return null;
+        }
+        
+    }
+
+    private IEnumerator UnCrouchCoroutine()
+    {
+        float counter = 0;
+        while (!crouching && colliderComp.size.y < originalHeight)
+        {
+            // Calculamso el incremento
+            Vector3 newSize = colliderComp.size;
+            newSize.y = Mathf.Lerp(crouchingHeight, originalHeight, counter / CROUCH_TIME);
+
+            // Actualizamos el collider
+            colliderComp.size = newSize;
+            counter += Time.deltaTime;
+            yield return null;
+        }
+
     }
 }
