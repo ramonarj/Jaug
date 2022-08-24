@@ -18,8 +18,8 @@ public class PlayerController : MonoBehaviour
     Camera cameraComp;
     Rigidbody rigidComp;
     BoxCollider colliderComp;
-    private int weaponSelected = 1; //Empiezan en 1
-    private Gun arma;
+    private int weaponSelected = 0;
+    private List<Gun> armas;
 
 
     private bool crouching = false;
@@ -32,6 +32,7 @@ public class PlayerController : MonoBehaviour
     public TextMeshProUGUI ammoText;
 
     private float CROUCH_TIME = 0.2f;
+    private float MAX_WEAPONS = 4;
 
 
     // Constantes
@@ -54,7 +55,15 @@ public class PlayerController : MonoBehaviour
         if (rigidComp == null)
             Debug.LogWarning("ERROR: no hay Rigidbody");
 
-        arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Gun>();
+        armas = new List<Gun>();
+        foreach (Transform child in cameraComp.transform)
+        {
+            Gun g = child.GetComponent<Gun>();
+            if (g != null)
+                armas.Add(g);
+        }
+
+        Debug.Log(armas.Count);
         UpdateWeaponGUI();
 
         originalHeight = colliderComp.size.y;
@@ -80,7 +89,7 @@ public class PlayerController : MonoBehaviour
             // SALTO
             if (Input.GetKeyDown(KeyCode.Space) && !jumping)
             {
-                rigidComp.AddForce(new Vector3(0, jumpForce * 5000, 0));
+                rigidComp.AddForce(new Vector3(0, jumpForce * 50, 0));
                 jumping = true;
             }
 
@@ -103,30 +112,30 @@ public class PlayerController : MonoBehaviour
             // Semiautomático
             if (Input.GetMouseButtonDown(0))
             {
-                arma.Shoot();
+                armas[weaponSelected].Shoot();
                 UpdateWeaponGUI();
             }
             // Automático
-            else if (Input.GetMouseButton(0) && arma.gunType == Gun.GunType.Automatic)
+            else if (Input.GetMouseButton(0) && armas[weaponSelected].gunType == Gun.GunType.Automatic)
             {
-                arma.Shoot();
+                armas[weaponSelected].Shoot();
                 UpdateWeaponGUI();
             }
             // Levantamos click izquierdo
             else if (Input.GetMouseButtonUp(0))
-                arma.StopShooting();
+                armas[weaponSelected].StopShooting();
 
 
             // APUNTADO
             if (Input.GetMouseButtonDown(1))
-                arma.Aim();
+                armas[weaponSelected].Aim();
             else if (Input.GetMouseButtonUp(1))
-                arma.StopAiming();
+                armas[weaponSelected].StopAiming();
 
             // RECARGA
             if (Input.GetKeyDown(KeyCode.R))
             {
-                arma.Reload();
+                armas[weaponSelected].Reload();
                 UpdateWeaponGUI();
             }
 
@@ -139,20 +148,84 @@ public class PlayerController : MonoBehaviour
                 // Número de armas
                 //int weaponsNo = weaponSelector.transform.parent.childCount;
 
-                cameraComp.transform.GetChild(weaponSelected - 1).gameObject.SetActive(false);
+                cameraComp.transform.GetChild(weaponSelected).gameObject.SetActive(false);
 
                 // Cambiamos de arma
                 mouseScroll *= 10; //Para pasar de -0.1/0.1 a -1/1
                 weaponSelected += (int)mouseScroll;
-                arma = cameraComp.transform.GetChild(weaponSelected - 1).GetComponent<Gun>();
+                Gun gunComp = cameraComp.transform.GetChild(weaponSelected).GetComponent<Gun>();
+                if (gunComp == null)
+                    return;
+                armas[weaponSelected] = gunComp;
 
 
                 // Actualizamos GUI
-                weaponSelector.transform.position = weaponSelector.transform.parent.GetChild(weaponSelected).position;
-                arma.gameObject.SetActive(true);
+                weaponSelector.transform.position = weaponSelector.transform.parent.GetChild(weaponSelected + 1).position;
+                armas[weaponSelected].gameObject.SetActive(true);
 
 
                 UpdateWeaponGUI();
+            }
+
+
+            // TIRAR UN ARMA
+            if (Input.GetKeyDown(KeyCode.Q)) 
+            {
+                if (armas[weaponSelected] == null) // Si no hay arma en ese slot, no hacemos nada
+                    return;
+
+                // Quitamos el sprite del selector 
+                weaponSelector.transform.parent.GetChild(weaponSelected + 1).GetChild(0).
+                    GetComponent<Image>().sprite = null;
+
+                // Lo desequipamos de nuestro inventario
+                Gun weaponThrown = armas[weaponSelected];
+                armas[weaponSelected] = null;
+                weaponThrown.transform.parent = null;
+
+                // Ponemos en su lugar un objeto vacío
+                GameObject mockGO = new GameObject("Vacio" + weaponSelected);
+                mockGO.transform.parent = cameraComp.transform;
+                mockGO.transform.SetSiblingIndex(weaponSelected - 1);
+
+
+                // Lo tiramos y le activamos las colisiones
+                Rigidbody gunRigid = weaponThrown.GetComponent<Rigidbody>();
+                gunRigid.isKinematic = false;
+                gunRigid.AddForce(cameraComp.transform.forward * 200);
+                weaponThrown.GetComponent<CapsuleCollider>().isTrigger = false;
+            }
+
+            // COGER UN ARMA
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                Debug.Log("Interact");
+                RaycastHit hit;
+                if (Physics.Raycast(cameraComp.transform.position, cameraComp.transform.forward, out hit, 3f))
+                {
+                    Gun floorGun = hit.transform.GetComponent<Gun>();
+                    if (floorGun != null)
+                    {
+                        // Soltamos el arma anterior
+
+
+
+                        // Nos lo ponemos en la mano
+                        armas[weaponSelected] = floorGun;
+                        armas[weaponSelected].transform.parent = cameraComp.transform;
+                        armas[weaponSelected].transform.SetSiblingIndex(weaponSelected - 1);
+                        armas[weaponSelected].transform.localPosition = armas[weaponSelected].defaultTrans.localPosition;
+                        armas[weaponSelected].transform.localRotation = armas[weaponSelected].defaultTrans.localRotation;
+
+                        // Actualizamos el sprite del GUI
+                        weaponSelector.transform.parent.GetChild(weaponSelected + 1).GetChild(0).
+                    GetComponent<Image>().sprite = armas[weaponSelected].sprite;
+
+                        // Le quitamos cosas físicas
+                        floorGun.GetComponent<Rigidbody>().isKinematic = true;
+                        floorGun.GetComponent<CapsuleCollider>().isTrigger = true;
+                    }
+                }
             }
         }
 
@@ -240,7 +313,7 @@ public class PlayerController : MonoBehaviour
     // Actualiza la munición del arma actual
     private void UpdateWeaponGUI() 
     {
-        ammoText.GetComponent<TextMeshProUGUI>().text = arma.ammo + " / " + arma.maxAmmo;
+        ammoText.GetComponent<TextMeshProUGUI>().text = armas[weaponSelected].ammo + " / " + armas[weaponSelected].maxAmmo;
     }
 
     private IEnumerator CrouchCoroutine()

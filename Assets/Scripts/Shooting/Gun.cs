@@ -28,6 +28,8 @@ public class Gun : MonoBehaviour
     public Transform aimTrans;
     [Tooltip("La partícula que aparecerá al impactar un objetivo con el arma")]
     public GameObject impactParticle;
+    [Tooltip("La imagen 2D del arma")]
+    public Sprite sprite;
 
     // Variables rivadas
     private bool reloading; // Control para las subrutinas
