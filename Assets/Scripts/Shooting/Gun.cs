@@ -53,15 +53,18 @@ public class Gun : MonoBehaviour
 
 
 
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         reloadTimer = 0;
         reloading = false;
         aiming = false;
         shooting = false;
         ammo = maxAmmo;
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
         particulas = GetComponentInChildren<ParticleSystem>();
         camara = gameObject.transform.parent.GetComponent<Camera>();
         defaultFOV = camara.fieldOfView;
